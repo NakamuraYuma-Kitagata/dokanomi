@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>飲み会 席順シャッフル</title>
+<style>
+:root {
+  --bg: #f7f6f2;
+  --card: #ffffff;
+  --border: #e4e2db;
+  --border2: #d0cec5;
+  --text: #1c1b18;
+  --text2: #6b6960;
+  --text3: #a09e96;
+  --accent: #3d35a8;
+  --accent-bg: #eeedfb;
+  --accent-light: #f4f3fd;
+  --green: #1a6e40;
+  --green-bg: #edf9f3;
+  --orange: #9a5a00;
+  --orange-bg: #fff4e0;
+  --red: #a02020;
+  --red-bg: #fff0f0;
+  --mode-basic: #3d35a8;    --mode-basic-bg: #eeedfb;
+  --mode-farewell: #b04510; --mode-farewell-bg: #fef0e8;
+  --mode-welcome: #1a6e40;  --mode-welcome-bg: #edf9f3;
+  --role-director: #7b1fa2;   --role-director-bg: #f3e5f5;
+  --role-roomchief: #ad1457;  --role-roomchief-bg: #fce4ec;
+  --role-manager: #1565c0;    --role-manager-bg: #e3f2fd;
+  --role-chief: #00695c;      --role-chief-bg: #e0f2f1;
+  --role-staff: #546e7a;      --role-staff-bg: #eceff1;
+  --role-star: #b04510;       --role-star-bg: #fef0e8;
+  --role-new: #1a6e40;        --role-new-bg: #edf9f3;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Noto Sans JP',-apple-system,sans-serif;background:var(--bg);min-height:100vh;color:var(--text);padding:2rem 1rem 5rem;display:flex;justify-content:center}
+.container{width:100%;max-width:680px}
+.app-header{margin-bottom:1.5rem}
+.app-title{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:3px}
+.app-sub{font-size:13px;color:var(--text3)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.25rem;margin-bottom:1rem}
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
+.tab{padding:8px 14px;font-size:13px;font-weight:500;color:var(--text3);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;font-family:inherit;transition:color .15s;white-space:nowrap}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.panel{display:none}.panel.active{display:block}
+.slabel{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px}
+
+/* ---- inputs ---- */
+input[type=text],input[type=search]{height:36px;padding:0 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:#fafaf8;color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s}
+input[type=text]:focus,input[type=search]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(61,53,168,.08);background:#fff}
+input[type=number]{height:36px;padding:0 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;text-align:center;background:#fafaf8;color:var(--text);outline:none}
+input[type=number]:focus{border-color:var(--accent)}
+select.role-sel{height:36px;padding:0 6px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;background:#fafaf8;color:var(--text);outline:none;cursor:pointer;flex-shrink:0}
+select.role-sel:focus{border-color:var(--accent)}
+
+/* ---- buttons ---- */
+.del-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:#fff;color:var(--text3);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;font-family:inherit}
+.del-btn:hover{background:var(--red-bg);color:var(--red);border-color:#f5c0c0}
+.add-btn{display:flex;align-items:center;gap:5px;height:32px;padding:0 12px;border:1.5px dashed var(--border2);border-radius:8px;background:transparent;color:var(--text3);font-size:12px;font-family:inherit;cursor:pointer;transition:all .15s}
+.add-btn:hover{background:var(--accent-light);color:var(--accent);border-color:#b4aee8}
+.icon-btn{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 10px;border:1px solid var(--border);border-radius:7px;background:#fff;color:var(--text2);font-size:12px;font-family:inherit;cursor:pointer;transition:all .15s;font-weight:500}
+.icon-btn:hover{background:var(--bg);border-color:var(--border2)}
+.icon-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.icon-btn.primary:hover{opacity:.88}
+.icon-btn.danger{color:var(--red)}
+.icon-btn.danger:hover{background:var(--red-bg);border-color:#f5c0c0}
+
+/* ---- role badge ---- */
+.role-badge{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap}
+
+/* ---- table config ---- */
+.table-config-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.table-row{display:flex;align-items:center;gap:7px}
+.row-label{font-size:13px;color:var(--text2)}
+
+/* ---- toggle group ---- */
+.toggle-group{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.toggle-btn{height:32px;padding:0 13px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text2);font-size:12px;font-family:inherit;cursor:pointer;font-weight:500;transition:all .15s}
+.toggle-btn:hover{border-color:var(--border2);background:var(--bg)}
+.toggle-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+
+/* ---- mode cards ---- */
+.mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px}
+.mode-card{border:1.5px solid var(--border);border-radius:12px;padding:12px 10px;cursor:pointer;transition:all .15s;background:#fff;text-align:center}
+.mode-card:hover{border-color:var(--border2);background:var(--bg)}
+.mode-card.active-basic   {border-color:var(--mode-basic);  background:var(--mode-basic-bg)}
+.mode-card.active-farewell{border-color:var(--mode-farewell);background:var(--mode-farewell-bg)}
+.mode-card.active-welcome {border-color:var(--mode-welcome); background:var(--mode-welcome-bg)}
+.mode-icon{font-size:22px;margin-bottom:5px}
+.mode-name{font-size:12px;font-weight:700;margin-bottom:3px}
+.mode-card.active-basic   .mode-name{color:var(--mode-basic)}
+.mode-card.active-farewell.mode-name{color:var(--mode-farewell)}
+.mode-card.active-welcome .mode-name{color:var(--mode-welcome)}
+.mode-desc{font-size:10px;color:var(--text3);line-height:1.4}
+.mode-option-box{margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:10px}
+.mode-option-label{font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600}
+
+/* ---- info / status ---- */
+.info-bar{font-size:12px;padding:7px 12px;border-radius:8px;margin-top:10px}
+.info-ok  {color:var(--green); background:var(--green-bg)}
+.info-warn{color:var(--orange);background:var(--orange-bg)}
+.info-err {color:var(--red);   background:var(--red-bg)}
+
+/* ---- shuffle btn ---- */
+.shuffle-btn{width:100%;height:46px;margin-top:12px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s,transform .1s}
+.shuffle-btn.mode-farewell-btn{background:var(--mode-farewell)}
+.shuffle-btn.mode-welcome-btn {background:var(--mode-welcome)}
+.shuffle-btn:hover{opacity:.88}
+.shuffle-btn:active{transform:scale(.98)}
+
+/* ---- MEMBER MASTER ---- */
+.master-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.master-search{flex:1;min-width:120px}
+.master-table{width:100%;border-collapse:collapse;font-size:13px}
+.master-table th{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.05em;padding:6px 8px;border-bottom:1px solid var(--border);text-align:left;background:#fafaf8}
+.master-table td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+.master-table tr:last-child td{border-bottom:none}
+.master-table tr:hover td{background:#fafaf8}
+.master-table input[type=text]{width:100%;border:none;background:transparent;padding:0;font-size:13px;font-family:inherit;color:var(--text);outline:none}
+.master-table input[type=text]:focus{border-bottom:1px solid var(--accent)}
+.master-table select{border:none;background:transparent;font-size:12px;font-family:inherit;color:var(--text);outline:none;cursor:pointer}
+.chk{width:16px;height:16px;cursor:pointer;accent-color:var(--accent)}
+
+/* ---- PARTICIPANT PICKER ---- */
+.picker-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.picker-actions{display:flex;gap:6px;align-items:center}
+.member-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;min-height:36px;padding:6px 8px;border:1px solid var(--border);border-radius:10px;background:#fafaf8}
+.member-chip{display:flex;align-items:center;gap:4px;padding:3px 8px 3px 10px;background:#fff;border:1px solid var(--border);border-radius:16px;font-size:12px;font-weight:500;cursor:default}
+.chip-remove{width:16px;height:16px;border-radius:50%;background:var(--border);color:var(--text3);font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s;border:none;font-family:inherit}
+.chip-remove:hover{background:var(--red-bg);color:var(--red)}
+.dropdown-wrap{position:relative;margin-bottom:8px}
+.dropdown-search{width:100%}
+.dropdown-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.08);z-index:100;max-height:200px;overflow-y:auto;display:none}
+.dropdown-list.open{display:block}
+.dropdown-item{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;font-size:13px;transition:background .1s}
+.dropdown-item:hover{background:var(--accent-light)}
+.dropdown-item.selected{opacity:.4;pointer-events:none}
+.dropdown-empty{padding:10px 12px;font-size:12px;color:var(--text3);text-align:center}
+
+/* ---- QR MODAL ---- */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem}
+.modal-box{background:#fff;border-radius:18px;padding:1.5rem;width:100%;max-width:420px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--text3);margin-bottom:1rem;line-height:1.6}
+.modal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:1rem}
+.qr-canvas-wrap{display:flex;justify-content:center;margin-bottom:1rem}
+#qrCanvas{border-radius:10px;border:1px solid var(--border)}
+.url-box{word-break:break-all;font-size:11px;background:var(--bg);border-radius:8px;padding:8px 10px;color:var(--text2);margin-bottom:8px;max-height:56px;overflow-y:auto}
+.method-tabs{display:flex;gap:4px;margin-bottom:1rem}
+.method-tab{flex:1;height:32px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text3);font-size:12px;font-family:inherit;cursor:pointer;font-weight:500;transition:all .15s}
+.method-tab.active{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+/* ---- 個人QRグリッド ---- */
+.qr-person-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:12px;max-height:65vh;overflow-y:auto;padding:2px}
+.qr-person-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center;cursor:pointer;transition:all .15s}
+.qr-person-card:hover{border-color:var(--accent);background:var(--accent-light);transform:translateY(-2px)}
+.qr-person-card canvas{display:block;margin:0 auto 6px;border-radius:6px}
+.qr-person-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
+.qr-person-seat{font-size:11px;color:var(--text3)}
+.qr-detail-view{display:none;text-align:center}
+.qr-detail-back{display:flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;font-size:13px;color:var(--text2);font-family:inherit;margin-bottom:12px;padding:0}
+.qr-detail-back:hover{color:var(--accent)}
+.qr-big-canvas{display:block;margin:0 auto 10px;border-radius:12px;border:1px solid var(--border)}
+.qr-print-btn{margin-top:8px}
+@media print{
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block!important}
+}
+#printArea{display:none}
+.print-card{page-break-inside:avoid;margin:0 auto 24px;max-width:300px;text-align:center;font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;border:1px solid #e4e2db;border-radius:12px;padding:20px}
+.print-card-title{font-size:14px;font-weight:700;margin-bottom:4px}
+.print-card-sub{font-size:11px;color:#a09e96;margin-bottom:12px}
+/* ---- RESULT ---- */
+.result-section{display:none;margin-top:1rem}
+.result-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.result-title{font-size:14px;font-weight:700}
+.result-meta{font-size:12px;color:var(--text3)}
+.mode-tag{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 9px;border-radius:11px;font-size:11px;font-weight:700;margin-left:8px}
+.mode-tag-basic   {background:var(--mode-basic-bg);   color:var(--mode-basic)}
+.mode-tag-farewell{background:var(--mode-farewell-bg);color:var(--mode-farewell)}
+.mode-tag-welcome {background:var(--mode-welcome-bg); color:var(--mode-welcome)}
+.table-blocks{display:flex;flex-direction:column;gap:8px}
+.table-block{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;animation:fadeIn .25s ease}
+.table-block-header{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#fafaf8;border-bottom:1px solid var(--border)}
+.table-block-title{font-size:13px;font-weight:700}
+.table-block-sub{font-size:11px;color:var(--text3)}
+.seats-grid{padding:10px 12px;display:flex;flex-wrap:wrap;gap:5px}
+.seat-chip{display:flex;align-items:center;gap:5px;padding:4px 9px;background:var(--bg);border-radius:20px;font-size:12px}
+.seat-num{width:18px;height:18px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.seat-name{font-weight:600;color:var(--text)}
+.layout-section{margin-top:1rem}
+.layout-label{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.07em;margin-bottom:8px}
+.layout-wrap{background:#fff;border:1px solid var(--border);border-radius:14px;padding:1rem;overflow-x:auto}
+svg.layout-svg{width:100%;display:block}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes cardPop{0%{opacity:0;transform:scale(.7) translateY(18px)}60%{transform:scale(1.04) translateY(-3px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+@keyframes shimmer{0%,100%{opacity:1}50%{opacity:.5}}
+.confetti-piece{position:fixed;width:10px;height:10px;top:-20px;pointer-events:none;z-index:9999;border-radius:2px}
+.table-block.anim-pop{animation:cardPop .55s cubic-bezier(.34,1.56,.64,1) both}
+.result-burst{text-align:center;padding:1.2rem 0 .25rem;animation:cardPop .5s ease}
+.result-burst-icon{font-size:38px;display:block;margin-bottom:5px}
+.result-burst-txt{font-size:17px;font-weight:700;color:var(--accent)}
+#shuffleOverlay{display:none;position:fixed;inset:0;background:rgba(247,246,242,.82);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(3px)}
+#shuffleOverlay.show{display:flex}
+#shuffleOverlay .spin-icon{font-size:46px;animation:confettiFall 1s linear infinite;animation-name:spinBounce}
+@keyframes spinBounce{0%{transform:rotate(0deg) scale(1)}50%{transform:rotate(200deg) scale(1.25)}100%{transform:rotate(360deg) scale(1)}}
+#shuffleOverlay .spin-txt{font-size:15px;font-weight:600;color:var(--accent);animation:shimmer 1s ease infinite}
+@media(max-width:480px){
+  .mode-grid{grid-template-columns:1fr}
+  .mode-card{display:flex;align-items:center;text-align:left;gap:10px;padding:10px 12px}
+  .mode-icon{font-size:18px;margin-bottom:0}
+  .master-table th:nth-child(3),.master-table td:nth-child(3){display:none}
+}
+</style>
+</head>
+<body>
+<!-- シャッフル演出オーバーレイ -->
+<div id="shuffleOverlay">
+  <div class="spin-icon">🎲</div>
+  <div class="spin-txt" id="overlayTxt">席順を決めています...</div>
+</div>
+
+<div class="container">
+  <div class="app-header">
+    <div class="app-title">🍻 飲み会 席順シャッフル</div>
+    <div class="app-sub">メンバーを登録して、モードを選んで最適な席順を自動生成</div>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active"  onclick="switchTab('attend')">参加者</button>
+      <button class="tab"         onclick="switchTab('master')">メンバー管理</button>
+      <button class="tab"         onclick="switchTab('tables')">テーブル</button>
+      <button class="tab"         onclick="switchTab('mode')">モード</button>
+    </div>
+
+    <!-- ========== 参加者タブ ========== -->
+    <div id="panel-attend" class="panel active">
+      <div class="picker-header">
+        <div class="slabel" style="margin:0">今回の参加者</div>
+        <div class="picker-actions">
+          <button class="icon-btn" onclick="openCheckPicker()">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M3 6l2 2 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            一覧から選ぶ
+          </button>
+          <button class="icon-btn danger" onclick="clearAttendees()">全削除</button>
+        </div>
+      </div>
+
+      <!-- チップ表示エリア -->
+      <div class="member-chips" id="attendChips">
+        <span style="font-size:12px;color:var(--text3);align-self:center">参加者を追加してください</span>
+      </div>
+
+      <!-- ドロップダウン検索で1人ずつ追加 -->
+      <div class="slabel" style="margin-bottom:6px">ドロップダウンから追加</div>
+      <div class="dropdown-wrap">
+        <input type="search" class="dropdown-search" id="ddSearch" placeholder="名前で検索して追加..." autocomplete="off"
+          oninput="filterDropdown()" onfocus="openDropdown()" onblur="setTimeout(closeDropdown,150)">
+        <div class="dropdown-list" id="ddList"></div>
+      </div>
+
+      <!-- 一覧チェック選択モーダル風インライン -->
+      <div id="checkPickerWrap" style="display:none;margin-top:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="slabel" style="margin:0">一覧から選択</div>
+          <div style="display:flex;gap:6px">
+            <button class="icon-btn" onclick="checkAll()">全選択</button>
+            <button class="icon-btn" onclick="uncheckAll()">全解除</button>
+            <button class="icon-btn primary" onclick="applyCheck()">追加する</button>
+            <button class="icon-btn" onclick="closeCheckPicker()">閉じる</button>
+          </div>
+        </div>
+        <input type="search" id="checkSearch" placeholder="絞り込み..." style="width:100%;margin-bottom:8px" oninput="renderCheckList()">
+        <div id="checkList" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;background:#fafaf8"></div>
+      </div>
+
+      <div id="infoBar" class="info-bar info-ok" style="margin-top:10px"></div>
+    </div>
+
+    <!-- ========== メンバー管理タブ ========== -->
+    <div id="panel-master" class="panel">
+      <div class="master-toolbar">
+        <input type="search" class="master-search" id="masterSearch" placeholder="名前で絞り込み..." oninput="renderMaster()">
+        <button class="icon-btn primary" onclick="addMasterRow()">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><line x1="5.5" y1="1" x2="5.5" y2="10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="1" y1="5.5" x2="10" y2="5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          メンバー追加
+        </button>
+        <button class="icon-btn" onclick="exportMaster()">エクスポート</button>
+        <button class="icon-btn" onclick="document.getElementById('importFile').click()">インポート</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importMaster(event)">
+      </div>
+      <div style="overflow-x:auto">
+        <table class="master-table">
+          <thead>
+            <tr>
+              <th style="width:28px"></th>
+              <th>氏名</th>
+              <th>役職</th>
+              <th>立場</th>
+              <th style="width:36px"></th>
+            </tr>
+          </thead>
+          <tbody id="masterBody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--text3)" id="masterCount"></div>
+    </div>
+
+    <!-- ========== テーブルタブ ========== -->
+    <div id="panel-tables" class="panel">
+      <div class="slabel">テーブルの形</div>
+      <div class="toggle-group" style="margin-bottom:16px">
+        <button class="toggle-btn active" id="btn-rect"  onclick="setShape('rect')">長方形テーブル</button>
+        <button class="toggle-btn"        id="btn-round" onclick="setShape('round')">丸テーブル</button>
+        <button class="toggle-btn"        id="btn-both"  onclick="setShape('both')">混在</button>
+      </div>
+      <div class="slabel">テーブル構成</div>
+      <div class="table-config-list" id="tableConfigList"></div>
+      <button class="add-btn" onclick="addTableConfig()">
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><line x1="5.5" y1="1" x2="5.5" y2="10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="1" y1="5.5" x2="10" y2="5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        テーブルを追加
+      </button>
+    </div>
+
+    <!-- ========== モードタブ ========== -->
+    <div id="panel-mode" class="panel">
+      <div class="slabel">シャッフルモード</div>
+      <div class="mode-grid" style="margin-bottom:12px">
+        <div class="mode-card active-basic" id="mcard-basic" onclick="setMode('basic')">
+          <div class="mode-icon">🎲</div>
+          <div class="mode-name">親睦会</div>
+          <div class="mode-desc">役職をバランスよく各テーブルへ分散</div>
+        </div>
+        <div class="mode-card" id="mcard-farewell" onclick="setMode('farewell')">
+          <div class="mode-icon">🎁</div>
+          <div class="mode-name">送別会</div>
+          <div class="mode-desc">主役が全員と話せるよう配置</div>
+        </div>
+        <div class="mode-card" id="mcard-welcome" onclick="setMode('welcome')">
+          <div class="mode-icon">🌱</div>
+          <div class="mode-name">歓迎会</div>
+          <div class="mode-desc">新入社員＋面倒見役をセットで配置</div>
+        </div>
+      </div>
+      <div id="farewell-options" class="mode-option-box" style="display:none">
+        <div class="mode-option-label">主役の配置方法</div>
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="fo-spread" onclick="setFarewellOpt('spread')">各テーブルに1人ずつ分散</button>
+          <button class="toggle-btn"        id="fo-gather" onclick="setFarewellOpt('gather')">主役同士を同じテーブルに</button>
+        </div>
+      </div>
+      <div class="slabel" style="margin-top:4px">モードの説明</div>
+      <div id="modeDescBox" style="font-size:12px;color:var(--text2);line-height:1.7;padding:10px 12px;background:var(--bg);border-radius:10px"></div>
+    </div>
+
+    <button class="shuffle-btn" id="shuffleBtn" onclick="doShuffle()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      席順をシャッフル
+    </button>
+  </div>
+
+  <!-- ========== RESULT ========== -->
+  <div id="resultSection" class="result-section">
+    <div id="resultBurst" class="result-burst" style="display:none">
+      <span class="result-burst-icon">🎉</span>
+      <div class="result-burst-txt" id="resultBurstTxt"></div>
+    </div>
+    <div class="result-header">
+      <div class="result-title">席順結果 <span id="modeTagEl"></span></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="result-meta" id="resultMeta"></div>
+        <button class="icon-btn primary" onclick="openQrModal()" style="display:flex;align-items:center;gap:5px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="13" y="3" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="3" y="13" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="15" y="15" width="2" height="2" fill="currentColor"/><rect x="19" y="15" width="2" height="2" fill="currentColor"/><rect x="15" y="19" width="2" height="2" fill="currentColor"/><rect x="19" y="19" width="2" height="2" fill="currentColor"/><rect x="15" y="17" width="2" height="2" fill="currentColor"/><rect x="17" y="19" width="2" height="2" fill="currentColor"/></svg>
+          QRコードで共有
+        </button>
+      </div>
+    </div>
+    <div class="table-blocks" id="tableBlocks"></div>
+    <div class="layout-section">
+      <div class="layout-label">レイアウト図</div>
+      <div class="layout-wrap"><svg id="layoutSvg" class="layout-svg"></svg></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== QRモーダル（1枚集約） ========== -->
+<div id="qrModalBackdrop" class="modal-backdrop" style="display:none" onclick="closeQrModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:400px;width:95vw;text-align:center">
+    <div class="modal-title">📱 席順QRコード</div>
+    <div class="modal-sub">読み取ると全員の席順一覧がコンフェッティ演出付きで表示されます。</div>
+    <canvas id="qrCanvas" width="240" height="240" style="display:block;margin:0 auto 12px;border-radius:12px;border:1px solid var(--border)"></canvas>
+    <div class="url-box" id="qrUrlBox" style="word-break:break-all;font-size:11px;background:var(--bg);border-radius:8px;padding:8px 10px;color:var(--text2);margin-bottom:10px;max-height:52px;overflow-y:auto;text-align:left"></div>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="icon-btn primary" onclick="downloadQrImage()">QR画像をダウンロード</button>
+      <button class="icon-btn" onclick="copyQrUrl()">URLをコピー</button>
+      <button class="icon-btn" onclick="closeQrModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- 印刷用エリア -->
+<div id="printArea"></div>
+
+<script>
+// ===================== CONSTANTS =====================
+const ROLES = [
+  {value:'director',  label:'部長'},
+  {value:'roomchief', label:'室長'},
+  {value:'manager',   label:'課長'},
+  {value:'chief',     label:'係長'},
+  {value:'staff',     label:'一般'},
+];
+const POSITIONS = [
+  {value:'general', label:'一般'},
+  {value:'star',    label:'⭐ 主役'},
+  {value:'new',     label:'🌱 新入社員'},
+];
+const ROLE_WEIGHT = {director:4,roomchief:4,manager:3,chief:2,staff:1};
+const MODE_DESCS = {
+  basic:   '役職・立場をもとに、上位役職者が各テーブルに均等になるよう自動配分します。部長・室長などがひとつのテーブルに偏らないため、どのテーブルでも活発な交流が生まれます。',
+  farewell:'「主役」に設定した方が全員と交流できるよう配置します。主役を各テーブルに分散させるか、まとめて座らせるかを選べます。',
+  welcome: '「新入社員」に設定した方が各テーブルに配置され、隣席には必ず面倒見役（役職上位者）が座るよう調整します。',
+};
+const STORAGE_MASTER = 'nomikai_master_v1';
+const STORAGE_TABLES = 'nomikai_tables_v1';
+
+// ===================== STATE =====================
+// masterList: [{id, name, role, pos}]
+let masterList = [];
+// attendeeIds: string[] — IDs of people attending this event
+let attendeeIds = [];
+let tableConfigs = [{seats:6,count:1},{seats:4,count:1}];
+let shape = 'rect';
+let mode  = 'basic';
+let farewellOpt = 'spread';
+
+// ===================== PERSISTENCE =====================
+function saveMaster() {
+  try { localStorage.setItem(STORAGE_MASTER, JSON.stringify(masterList)); } catch(e){}
+}
+function loadMaster() {
+  try {
+    const d = localStorage.getItem(STORAGE_MASTER);
+    if(d) masterList = JSON.parse(d);
+  } catch(e){}
+  if(!masterList.length) {
+    // default sample
+    const samples = [
+      {name:'田中さん',role:'director',pos:'general'},
+      {name:'鈴木さん',role:'roomchief',pos:'general'},
+      {name:'佐藤さん',role:'manager',pos:'general'},
+      {name:'山田さん',role:'manager',pos:'general'},
+      {name:'伊藤さん',role:'chief',pos:'general'},
+      {name:'渡辺さん',role:'staff',pos:'general'},
+      {name:'高橋さん',role:'staff',pos:'general'},
+      {name:'中村さん',role:'staff',pos:'general'},
+      {name:'小林さん',role:'staff',pos:'new'},
+      {name:'加藤さん',role:'staff',pos:'new'},
+    ];
+    masterList = samples.map((s,i)=>({id:'m'+Date.now()+i,...s}));
+    saveMaster();
+  }
+}
+function saveTables() {
+  try { localStorage.setItem(STORAGE_TABLES, JSON.stringify({tableConfigs,shape})); } catch(e){}
+}
+function loadTables() {
+  try {
+    const d = localStorage.getItem(STORAGE_TABLES);
+    if(d){ const p=JSON.parse(d); tableConfigs=p.tableConfigs||tableConfigs; shape=p.shape||shape; }
+  } catch(e){}
+}
+
+// ===================== TAB =====================
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['attend','master','tables','mode'][i]===t));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  if(t==='master') renderMaster();
+  if(t==='attend') { renderAttendChips(); renderDropdown(); }
+}
+
+// ===================== MASTER MANAGEMENT =====================
+function uid(){ return 'm'+Date.now()+Math.random().toString(36).slice(2,6); }
+
+function renderMaster() {
+  const q = (document.getElementById('masterSearch').value||'').trim().toLowerCase();
+  const filtered = masterList.filter(m=>m.name.toLowerCase().includes(q));
+  const tbody = document.getElementById('masterBody');
+  tbody.innerHTML = '';
+  filtered.forEach(m => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="checkbox" class="chk" ${attendeeIds.includes(m.id)?'checked':''} onchange="toggleAttendByMaster('${m.id}',this.checked)"></td>
+      <td><input type="text" value="${esc(m.name)}" placeholder="氏名" onchange="updateMaster('${m.id}','name',this.value)"></td>
+      <td><select class="role-sel" onchange="updateMaster('${m.id}','role',this.value)">${ROLES.map(r=>`<option value="${r.value}"${m.role===r.value?' selected':''}>${r.label}</option>`).join('')}</select></td>
+      <td><select class="role-sel" onchange="updateMaster('${m.id}','pos',this.value)">${POSITIONS.map(p=>`<option value="${p.value}"${m.pos===p.value?' selected':''}>${p.label}</option>`).join('')}</select></td>
+      <td><button class="del-btn" onclick="deleteMaster('${m.id}')">×</button></td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('masterCount').textContent = `${filtered.length}名 表示 / 合計 ${masterList.length}名登録`;
+}
+
+function addMasterRow() {
+  const m = {id:uid(), name:'', role:'staff', pos:'general'};
+  masterList.push(m);
+  saveMaster();
+  renderMaster();
+  // focus new row input
+  const inputs = document.querySelectorAll('#masterBody input[type=text]');
+  if(inputs.length) inputs[inputs.length-1].focus();
+}
+
+function updateMaster(id, key, val) {
+  const m = masterList.find(x=>x.id===id);
+  if(m){ m[key]=val; saveMaster(); renderDropdown(); renderAttendChips(); }
+}
+
+function deleteMaster(id) {
+  masterList = masterList.filter(x=>x.id!==id);
+  attendeeIds = attendeeIds.filter(x=>x!==id);
+  saveMaster(); renderMaster(); renderAttendChips(); updateInfo();
+}
+
+function toggleAttendByMaster(id, checked) {
+  if(checked && !attendeeIds.includes(id)) attendeeIds.push(id);
+  if(!checked) attendeeIds = attendeeIds.filter(x=>x!==id);
+  renderAttendChips(); updateInfo();
+}
+
+function exportMaster() {
+  const blob = new Blob([JSON.stringify(masterList, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'nomikai_members.json'; a.click();
+}
+
+function importMaster(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if(Array.isArray(data)) {
+        masterList = data.map(d=>({id:d.id||uid(), name:d.name||'', role:d.role||'staff', pos:d.pos||'general'}));
+        saveMaster(); renderMaster(); renderDropdown(); renderAttendChips();
+      }
+    } catch(err){ alert('読み込みに失敗しました'); }
+  };
+  r.readAsText(file);
+  e.target.value='';
+}
+
+// ===================== ATTENDEE CHIPS =====================
+function renderAttendChips() {
+  const wrap = document.getElementById('attendChips');
+  wrap.innerHTML = '';
+  if(!attendeeIds.length){
+    wrap.innerHTML = '<span style="font-size:12px;color:var(--text3);align-self:center">参加者を追加してください</span>';
+    updateInfo(); return;
+  }
+  attendeeIds.forEach(id => {
+    const m = masterList.find(x=>x.id===id);
+    if(!m) return;
+    const chip = document.createElement('div'); chip.className='member-chip';
+    chip.innerHTML = `${esc(m.name)}${roleBadgeHTML(m.role,m.pos)}<button class="chip-remove" onclick="removeAttendee('${id}')">×</button>`;
+    wrap.appendChild(chip);
+  });
+  updateInfo();
+}
+
+function removeAttendee(id) {
+  attendeeIds = attendeeIds.filter(x=>x!==id);
+  renderAttendChips(); renderDropdown();
+}
+
+function clearAttendees() {
+  attendeeIds = []; renderAttendChips(); renderDropdown();
+}
+
+// ===================== DROPDOWN =====================
+function renderDropdown() {
+  const q = (document.getElementById('ddSearch').value||'').trim().toLowerCase();
+  const list = document.getElementById('ddList');
+  const available = masterList.filter(m=>
+    (!q || m.name.toLowerCase().includes(q))
+  );
+  list.innerHTML = '';
+  if(!available.length){ list.innerHTML='<div class="dropdown-empty">該当なし</div>'; return; }
+  available.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'dropdown-item' + (attendeeIds.includes(m.id)?' selected':'');
+    div.innerHTML = `${esc(m.name)} ${roleBadgeHTML(m.role,m.pos)}`;
+    div.onclick = () => addAttendee(m.id);
+    list.appendChild(div);
+  });
+}
+
+function filterDropdown(){ renderDropdown(); openDropdown(); }
+function openDropdown(){ renderDropdown(); document.getElementById('ddList').classList.add('open'); }
+function closeDropdown(){ document.getElementById('ddList').classList.remove('open'); }
+
+function addAttendee(id) {
+  if(!attendeeIds.includes(id)){ attendeeIds.push(id); }
+  document.getElementById('ddSearch').value='';
+  renderDropdown(); renderAttendChips();
+  closeDropdown();
+}
+
+// ===================== CHECK PICKER =====================
+function openCheckPicker(){ document.getElementById('checkPickerWrap').style.display='block'; renderCheckList(); }
+function closeCheckPicker(){ document.getElementById('checkPickerWrap').style.display='none'; }
+
+function renderCheckList() {
+  const q = (document.getElementById('checkSearch').value||'').trim().toLowerCase();
+  const filtered = masterList.filter(m=>!q||m.name.toLowerCase().includes(q));
+  const wrap = document.getElementById('checkList');
+  wrap.innerHTML='';
+  filtered.forEach(m=>{
+    const row = document.createElement('label');
+    row.style.cssText='display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
+    row.innerHTML=`<input type="checkbox" class="chk check-item" value="${m.id}" ${attendeeIds.includes(m.id)?'checked':''}> ${esc(m.name)} ${roleBadgeHTML(m.role,m.pos)}`;
+    wrap.appendChild(row);
+  });
+}
+
+function checkAll()  { document.querySelectorAll('.check-item').forEach(c=>c.checked=true); }
+function uncheckAll(){ document.querySelectorAll('.check-item').forEach(c=>c.checked=false); }
+
+function applyCheck() {
+  const checked = [...document.querySelectorAll('.check-item:checked')].map(c=>c.value);
+  const unchecked = [...document.querySelectorAll('.check-item:not(:checked)')].map(c=>c.value);
+  checked.forEach(id=>{ if(!attendeeIds.includes(id)) attendeeIds.push(id); });
+  unchecked.forEach(id=>{ attendeeIds=attendeeIds.filter(x=>x!==id); });
+  closeCheckPicker();
+  renderAttendChips(); renderDropdown();
+}
+
+// ===================== TABLE CONFIG =====================
+function renderTableConfigs() {
+  const list = document.getElementById('tableConfigList');
+  list.innerHTML='';
+  tableConfigs.forEach((tc,i)=>{
+    const row=document.createElement('div'); row.className='table-row';
+    const ni=document.createElement('input'); ni.type='number'; ni.min=1; ni.max=30; ni.value=tc.seats; ni.style.width='54px';
+    ni.oninput=()=>{ tableConfigs[i].seats=Math.max(1,parseInt(ni.value)||1); updateInfo(); saveTables(); };
+    const l1=document.createElement('span'); l1.className='row-label'; l1.textContent='人掛け ×';
+    const ci=document.createElement('input'); ci.type='number'; ci.min=1; ci.max=20; ci.value=tc.count; ci.style.width='54px';
+    ci.oninput=()=>{ tableConfigs[i].count=Math.max(1,parseInt(ci.value)||1); updateInfo(); saveTables(); };
+    const l2=document.createElement('span'); l2.className='row-label'; l2.textContent='卓';
+    const btn=document.createElement('button'); btn.className='del-btn'; btn.textContent='×';
+    btn.onclick=()=>{ tableConfigs.splice(i,1); renderTableConfigs(); saveTables(); };
+    row.append(ni,l1,ci,l2,btn); list.appendChild(row);
+  });
+  updateInfo();
+}
+function addTableConfig(){ tableConfigs.push({seats:4,count:1}); renderTableConfigs(); saveTables(); }
+
+// ===================== SHAPE / MODE =====================
+function setShape(s){
+  shape=s; saveTables();
+  ['rect','round','both'].forEach(v=>document.getElementById('btn-'+v).classList.toggle('active',v===s));
+}
+function setMode(m){
+  mode=m;
+  ['basic','farewell','welcome'].forEach(v=>{
+    const c=document.getElementById('mcard-'+v);
+    c.className='mode-card'+(v===m?' active-'+v:'');
+  });
+  document.getElementById('farewell-options').style.display=m==='farewell'?'block':'none';
+  document.getElementById('modeDescBox').textContent=MODE_DESCS[m];
+  updateShuffleBtn();
+}
+function setFarewellOpt(o){
+  farewellOpt=o;
+  ['spread','gather'].forEach(v=>document.getElementById('fo-'+v).classList.toggle('active',v===o));
+}
+function updateShuffleBtn(){
+  const btn=document.getElementById('shuffleBtn');
+  btn.className='shuffle-btn'+(mode==='farewell'?' mode-farewell-btn':mode==='welcome'?' mode-welcome-btn':'');
+}
+
+// ===================== INFO BAR =====================
+function updateInfo(){
+  const valid=attendeeIds.filter(id=>masterList.find(m=>m.id===id&&m.name.trim()));
+  const totalSeats=tableConfigs.reduce((s,tc)=>s+tc.seats*tc.count,0);
+  const bar=document.getElementById('infoBar');
+  if(!tableConfigs.length){bar.textContent='テーブルを設定してください';bar.className='info-bar info-err';return;}
+  if(!valid.length){bar.textContent='参加者を選んでください';bar.className='info-bar info-err';return;}
+  const diff=totalSeats-valid.length;
+  if(diff<0){bar.textContent=`参加者 ${valid.length}名 / 席数 ${totalSeats}席 — 席が ${Math.abs(diff)}席 不足`;bar.className='info-bar info-err';}
+  else if(diff>0){bar.textContent=`参加者 ${valid.length}名 / 席数 ${totalSeats}席 — ${diff}席 空きあり`;bar.className='info-bar info-warn';}
+  else{bar.textContent=`参加者 ${valid.length}名 / 席数 ${totalSeats}席 — ちょうどです ✓`;bar.className='info-bar info-ok';}
+}
+
+// ===================== SHUFFLE =====================
+function shuffleArr(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+function doShuffle(){
+  const people = attendeeIds
+    .map(id=>masterList.find(m=>m.id===id))
+    .filter(m=>m&&m.name.trim())
+    .map((m,i)=>({...m,idx:i}));
+  const totalSeats=tableConfigs.reduce((s,tc)=>s+tc.seats*tc.count,0);
+  if(!people.length){alert('参加者を選んでください');return;}
+  if(!tableConfigs.length){alert('テーブルを設定してください');return;}
+  if(people.length>totalSeats){alert(`席が不足しています（${people.length-totalSeats}席足りません）`);return;}
+
+  // シャッフル演出
+  const overlay=document.getElementById('shuffleOverlay');
+  const overlayTxt=document.getElementById('overlayTxt');
+  const msgs=['席順を決めています...','シャッフル中...','テーブルを並べています...','もう少しです...'];
+  let mi=0;
+  overlay.classList.add('show');
+  overlayTxt.textContent=msgs[mi];
+  const msgTimer=setInterval(()=>{ mi=(mi+1)%msgs.length; overlayTxt.textContent=msgs[mi]; },500);
+
+  setTimeout(()=>{
+    clearInterval(msgTimer);
+    overlay.classList.remove('show');
+
+    let tables=buildTables();
+    if(mode==='basic')        tables=shuffleBasic(people,tables);
+    else if(mode==='farewell')tables=shuffleFarewell(people,tables);
+    else                      tables=shuffleWelcome(people,tables);
+
+    tables.forEach(t=>{ while(t.seats.length<t.capacity) t.seats.push(null); });
+    renderResult(tables,people.length);
+  }, 1600);
+}
+
+function buildTables(){
+  const ts=[];
+  tableConfigs.forEach(tc=>{
+    for(let c=0;c<tc.count;c++){
+      const sh=shape==='both'?(ts.length%2===0?'rect':'round'):shape;
+      ts.push({id:ts.length,seats:[],capacity:tc.seats,shape:sh,label:`テーブル${ts.length+1}`});
+    }
+  });
+  return ts;
+}
+
+function shuffleBasic(people,tables){
+  const sorted=shuffleArr([...people]).sort((a,b)=>ROLE_WEIGHT[b.role]-ROLE_WEIGHT[a.role]);
+  const n=tables.length;
+  sorted.forEach((p,i)=>{
+    for(let k=0;k<n;k++){ const t=tables[(i+k)%n]; if(t.seats.length<t.capacity){t.seats.push(p);break;} }
+  });
+  return tables;
+}
+
+function shuffleFarewell(people,tables){
+  const stars=shuffleArr(people.filter(p=>p.pos==='star'));
+  const rest=shuffleArr(people.filter(p=>p.pos!=='star').sort((a,b)=>ROLE_WEIGHT[b.role]-ROLE_WEIGHT[a.role]));
+  const n=tables.length;
+  if(farewellOpt==='spread'){
+    stars.forEach((s,i)=>{ const t=tables[i%n]; if(t.seats.length<t.capacity) t.seats.push(s); });
+  } else {
+    stars.forEach(s=>{ for(let k=0;k<n;k++){ if(tables[k].seats.length<tables[k].capacity){tables[k].seats.push(s);break;} } });
+  }
+  rest.forEach((p,i)=>{ for(let k=0;k<n;k++){ const t=tables[(i+k)%n]; if(t.seats.length<t.capacity){t.seats.push(p);break;} } });
+  return tables;
+}
+
+function shuffleWelcome(people,tables){
+  const newbies=shuffleArr(people.filter(p=>p.pos==='new'));
+  const mentors=shuffleArr([...people.filter(p=>p.pos!=='new')].sort((a,b)=>ROLE_WEIGHT[b.role]-ROLE_WEIGHT[a.role]));
+  const n=tables.length;
+  newbies.forEach((nb,i)=>{ const t=tables[i%n]; if(t.seats.length<t.capacity) t.seats.push(nb); });
+  const used=new Set();
+  tables.forEach(t=>{
+    if(!t.seats.some(s=>s&&s.pos==='new')) return;
+    for(let m of mentors){ if(!used.has(m.id)&&t.seats.length<t.capacity){t.seats.push(m);used.add(m.id);break;} }
+  });
+  const remaining=shuffleArr(people.filter(p=>!tables.some(t=>t.seats.some(s=>s&&s.id===p.id))));
+  remaining.forEach(p=>{ for(let k=0;k<n;k++){ if(tables[k].seats.length<tables[k].capacity){tables[k].seats.push(p);break;} } });
+  return tables;
+}
+
+// ===================== CONFETTI =====================
+function launchConfetti(){
+  const colors=['#534AB7','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#3b82f6','#f97316'];
+  const shapes=['rect','circle','triangle'];
+  for(let i=0;i<90;i++){
+    const el=document.createElement('div');
+    el.className='confetti-piece';
+    const color=colors[Math.floor(Math.random()*colors.length)];
+    const shape=shapes[Math.floor(Math.random()*shapes.length)];
+    const size=6+Math.random()*8;
+    el.style.left=Math.random()*100+'vw';
+    el.style.width=size+'px'; el.style.height=size+'px';
+    el.style.background=color;
+    if(shape==='circle') el.style.borderRadius='50%';
+    else if(shape==='triangle'){ el.style.background='transparent'; el.style.borderLeft=size/2+'px solid transparent'; el.style.borderRight=size/2+'px solid transparent'; el.style.borderBottom=size+'px solid '+color; el.style.width='0'; el.style.height='0'; }
+    const dur=1.8+Math.random()*2;
+    const delay=Math.random()*0.8;
+    el.style.animation=`confettiFall ${dur}s ${delay}s ease-in forwards`;
+    el.style.transform=`rotate(${Math.random()*360}deg)`;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),(dur+delay+0.2)*1000);
+  }
+}
+
+// ===================== RENDER RESULT =====================
+const FILLS  =['#EEEDFE','#E1F5EE','#FAECE7','#E6F1FB','#FAEEDA','#FBEAF0','#EAF3DE','#FCEBEB'];
+const STROKES=['#534AB7','#0F6E56','#993C1D','#185FA5','#854F0B','#993556','#3B6D11','#A32D2D'];
+
+function roleBadgeHTML(role,pos){
+  if(pos==='star') return `<span class="role-badge" style="background:#fef0e8;color:#b04510">⭐主役</span>`;
+  if(pos==='new')  return `<span class="role-badge" style="background:#edf9f3;color:#1a6e40">🌱新入</span>`;
+  const map={director:['部長','#7b1fa2','#f3e5f5'],roomchief:['室長','#ad1457','#fce4ec'],manager:['課長','#1565c0','#e3f2fd'],chief:['係長','#00695c','#e0f2f1']};
+  if(!map[role]) return '';
+  const [l,c,bg]=map[role];
+  return `<span class="role-badge" style="background:${bg};color:${c}">${l}</span>`;
+}
+
+function renderResult(tables,validCount){
+  _lastTables = tables;
+  const tagMap={basic:['🎲 親睦会','mode-tag-basic'],farewell:['🎁 送別会','mode-tag-farewell'],welcome:['🌱 歓迎会','mode-tag-welcome']};
+  const modeLabels={basic:'席順が決まりました！',farewell:'送別会の席順が決まりました！',welcome:'歓迎会の席順が決まりました！'};
+  document.getElementById('modeTagEl').innerHTML=`<span class="mode-tag ${tagMap[mode][1]}">${tagMap[mode][0]}</span>`;
+  document.getElementById('resultMeta').textContent=`${validCount}名 / ${tables.length}テーブル`;
+
+  // バースト演出
+  const burst=document.getElementById('resultBurst');
+  const burstTxt=document.getElementById('resultBurstTxt');
+  burst.style.display='block';
+  burstTxt.textContent=modeLabels[mode];
+
+  const blocks=document.getElementById('tableBlocks'); blocks.innerHTML='';
+  tables.forEach((t,ti)=>{
+    const block=document.createElement('div');
+    block.className='table-block anim-pop';
+    block.style.animationDelay=(ti*0.08)+'s';
+    const bh=document.createElement('div'); bh.className='table-block-header';
+    bh.innerHTML=`<span class="table-block-title">${t.label}（${t.capacity}人掛け）</span><span class="table-block-sub">${t.shape==='round'?'丸テーブル':'長方形テーブル'}</span>`;
+    const sg=document.createElement('div'); sg.className='seats-grid';
+    t.seats.forEach((p,si)=>{
+      const chip=document.createElement('div'); chip.className='seat-chip';
+      chip.style.animationDelay=(ti*0.08+si*0.03)+'s';
+      chip.innerHTML=p
+        ?`<div class="seat-num">${si+1}</div><div class="seat-name">${esc(p.name)}</div>${roleBadgeHTML(p.role,p.pos)}`
+        :`<div class="seat-num">${si+1}</div><div class="seat-name" style="color:var(--text3)">（空席）</div>`;
+      sg.appendChild(chip);
+    });
+    block.append(bh,sg); blocks.appendChild(block);
+  });
+  buildLayoutSVG(tables);
+
+  const sec=document.getElementById('resultSection'); sec.style.display='block';
+  sec.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  // コンフェッティ発射
+  setTimeout(launchConfetti, 200);
+}
+
+// ===================== SVG =====================
+function buildLayoutSVG(tables){
+  const svg=document.getElementById('layoutSvg');
+  const n=tables.length;
+  const cols=n<=2?n:n<=4?2:Math.ceil(Math.sqrt(n));
+  const rows=Math.ceil(n/cols);
+  const cellW=580/cols, cellH=230;
+  svg.setAttribute('viewBox',`0 0 ${cols*cellW+40} ${rows*cellH+40}`);
+  svg.innerHTML='';
+  tables.forEach((t,i)=>{
+    const col=i%cols,row=Math.floor(i/cols);
+    const cx=20+col*cellW+cellW/2, cy=20+row*cellH+cellH/2;
+    const fill=FILLS[i%FILLS.length], stroke=STROKES[i%STROKES.length];
+    t.shape==='round'?drawRound(svg,t,cx,cy,fill,stroke):drawRect(svg,t,cx,cy,fill,stroke,cellW-30,cellH-30);
+  });
+}
+function svgEl(tag,attrs){ const e=document.createElementNS('http://www.w3.org/2000/svg',tag); Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v)); return e; }
+function svgTxt(parent,x,y,t,opts={}){ const e=svgEl('text',{x,y,'text-anchor':opts.a||'middle','dominant-baseline':'central','font-size':opts.sz||11,'font-weight':opts.w||400,fill:opts.fill||'#1c1b18','font-family':"'Hiragino Sans',sans-serif"}); e.textContent=t; parent.appendChild(e); }
+function seatLabel(p){ return p?p.name+(p.pos==='star'?' ⭐':p.pos==='new'?' 🌱':ROLE_WEIGHT[p.role]>=3?' ◆':''):'空席'; }
+
+function drawRound(svg,t,cx,cy,fill,stroke){
+  const n=t.capacity,r=Math.min(50,16+n*5),lr=r+30;
+  svg.appendChild(svgEl('circle',{cx,cy,r,fill,stroke,'stroke-width':1.5}));
+  svgTxt(svg,cx,cy-7,t.label,{sz:11,w:700,fill:stroke});
+  svgTxt(svg,cx,cy+8,`${n}人掛け`,{sz:9,fill:stroke});
+  t.seats.forEach((p,si)=>{
+    const ang=(si/n)*2*Math.PI-Math.PI/2;
+    const sx=cx+Math.cos(ang)*lr, sy=cy+Math.sin(ang)*lr;
+    svg.appendChild(svgEl('circle',{cx:sx,cy:sy,r:13,fill,stroke,'stroke-width':0.8,'stroke-opacity':0.6}));
+    svgTxt(svg,sx,sy,si+1,{sz:9,w:700,fill:stroke});
+    svg.appendChild(svgEl('line',{x1:cx+Math.cos(ang)*(r+1),y1:cy+Math.sin(ang)*(r+1),x2:sx-Math.cos(ang)*13,y2:sy-Math.sin(ang)*13,stroke,'stroke-width':0.5,'stroke-opacity':0.3}));
+    if(p){ const nx=sx+Math.cos(ang)*21,ny=sy+Math.sin(ang)*21; svgTxt(svg,nx,ny,seatLabel(p),{sz:8,a:Math.cos(ang)>0.3?'start':Math.cos(ang)<-0.3?'end':'middle',fill:'#1c1b18'}); }
+  });
+}
+function drawRect(svg,t,cx,cy,fill,stroke,cw,ch){
+  const n=t.capacity,tw=Math.min(cw-60,120),th=Math.min(ch-60,50),tx=cx-tw/2,ty=cy-th/2;
+  svg.appendChild(svgEl('rect',{x:tx,y:ty,width:tw,height:th,rx:8,fill,stroke,'stroke-width':1.5}));
+  svgTxt(svg,cx,cy-7,t.label,{sz:11,w:700,fill:stroke});
+  svgTxt(svg,cx,cy+7,`${n}人掛け`,{sz:9,fill:stroke});
+  const top=Math.ceil(n/2),bot=Math.floor(n/2);
+  for(let k=0;k<top;k++){
+    const p=t.seats[k],px=tx+tw*(k+1)/(top+1),py=ty-22;
+    svg.appendChild(svgEl('circle',{cx:px,cy:py,r:12,fill,stroke,'stroke-width':0.8,'stroke-opacity':0.6}));
+    svgTxt(svg,px,py,k+1,{sz:9,w:700,fill:stroke});
+    if(p) svgTxt(svg,px,py-17,seatLabel(p),{sz:8,fill:'#1c1b18'});
+  }
+  for(let k=0;k<bot;k++){
+    const p=t.seats[top+k],px=tx+tw*(k+1)/(bot+1),py=ty+th+22;
+    svg.appendChild(svgEl('circle',{cx:px,cy:py,r:12,fill,stroke,'stroke-width':0.8,'stroke-opacity':0.6}));
+    svgTxt(svg,px,py,top+k+1,{sz:9,w:700,fill:stroke});
+    if(p) svgTxt(svg,px,py+17,seatLabel(p),{sz:8,fill:'#1c1b18'});
+  }
+}
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ===================== QR（1枚集約） =====================
+let _lastTables = [];
+
+function drawQrOnCanvas(canvas, url, size){
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,size,size);
+  if(typeof QRCode !== 'undefined'){
+    try{
+      const qr = new QRCode(-1, QRCode.ErrorCorrectionLevel.M);
+      qr.addData(url); qr.make();
+      const modules = qr.modules, n = modules.length;
+      const cell = Math.floor((size-8)/n);
+      const offset = Math.floor((size - cell*n)/2);
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,size,size);
+      ctx.fillStyle='#1c1b18';
+      for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(modules[r][c]) ctx.fillRect(offset+c*cell,offset+r*cell,cell,cell);
+    }catch(e){
+      ctx.fillStyle='#f5f4f0'; ctx.fillRect(0,0,size,size);
+      ctx.fillStyle='#3d35a8'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('QR生成エラー',size/2,size/2);
+    }
+  } else {
+    ctx.fillStyle='#f5f4f0'; ctx.fillRect(0,0,size,size);
+    ctx.fillStyle='#888'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('読み込み中...',size/2,size/2-6);
+    ctx.fillText('しばらくお待ちください',size/2,size/2+10);
+  }
+}
+
+function buildAllSeatsUrl(){
+  const data = _lastTables.map(t=>({
+    label: t.label,
+    seats: t.seats.map((p,i)=>p?{name:p.name,seat:i+1,role:p.role,pos:p.pos}:null).filter(Boolean)
+  }));
+  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  const base = location.href.split('?')[0].split('#')[0];
+  return base + '?all=' + encodeURIComponent(b64);
+}
+
+function openQrModal(){
+  if(!_lastTables.length){ alert('先にシャッフルしてください'); return; }
+  document.getElementById('qrModalBackdrop').style.display='flex';
+  const url = buildAllSeatsUrl();
+  document.getElementById('qrUrlBox').textContent = url;
+  const cv = document.getElementById('qrCanvas');
+  // QRライブラリ読み込みを待つ
+  if(typeof QRCode !== 'undefined'){
+    drawQrOnCanvas(cv, url, 240);
+  } else {
+    drawQrOnCanvas(cv, url, 240); // placeholder
+    const timer = setInterval(()=>{
+      if(typeof QRCode !== 'undefined'){ clearInterval(timer); drawQrOnCanvas(cv,url,240); }
+    }, 200);
+  }
+}
+function closeQrModal(e){
+  if(!e || e.target===document.getElementById('qrModalBackdrop'))
+    document.getElementById('qrModalBackdrop').style.display='none';
+}
+function downloadQrImage(){
+  const cv = document.getElementById('qrCanvas');
+  const a = document.createElement('a');
+  a.href = cv.toDataURL('image/png');
+  a.download = '席順QR.png'; a.click();
+}
+function copyQrUrl(){
+  const url = buildAllSeatsUrl();
+  navigator.clipboard.writeText(url)
+    .then(()=>alert('URLをコピーしました！'))
+    .catch(()=>prompt('URLをコピーしてください：', url));
+}
+
+// ===================== INIT =====================
+loadMaster();
+loadTables();
+renderTableConfigs();
+renderAttendChips();
+renderDropdown();
+setMode('basic');
+setShape(shape);
+updateInfo();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+// ---- QR読み取り後: 全員席順一覧ページ（?all=...） ----
+(function(){
+  const params = new URLSearchParams(location.search);
+  const raw = params.get('all');
+  if(!raw) return;
+  try{
+    const tables = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(raw)))));
+    const RBMAP={director:['部長','#7b1fa2','#f3e5f5'],roomchief:['室長','#ad1457','#fce4ec'],manager:['課長','#1565c0','#e3f2fd'],chief:['係長','#00695c','#e0f2f1'],staff:['一般','#546e7a','#eceff1']};
+    const posMap={star:['⭐ 主役','#b04510','#fef0e8'],new:['🌱 新入社員','#1a6e40','#edf9f3']};
+
+    function badge(role,pos){
+      if(posMap[pos]) return `<span style="background:${posMap[pos][2]};color:${posMap[pos][1]};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap">${posMap[pos][0]}</span>`;
+      const r=RBMAP[role]; if(!r||role==='staff') return '';
+      return `<span style="background:${r[2]};color:${r[1]};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap">${r[0]}</span>`;
+    }
+
+    const tablesHtml = tables.map((t,ti)=>`
+      <div style="background:#fff;border:1px solid #e4e2db;border-radius:14px;margin-bottom:12px;overflow:hidden;animation:slideUp .45s ${ti*0.07}s both">
+        <div style="padding:8px 14px;background:#fafaf8;border-bottom:1px solid #eee;font-size:13px;font-weight:700;color:#1c1b18">${t.label}</div>
+        <div style="padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px">
+          ${t.seats.map(p=>`
+            <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:#f7f6f2;border-radius:20px;font-size:13px">
+              <div style="width:20px;height:20px;border-radius:50%;background:#eeedfb;color:#3d35a8;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${p.seat}</div>
+              <span style="font-weight:600">${p.name}</span>
+              ${badge(p.role,p.pos)}
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+
+    const pageHtml=`<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🍻 席順結果</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Noto Sans JP',sans-serif;background:#f7f6f2;min-height:100vh;padding:1.5rem 1rem 4rem;color:#1c1b18}
+.header{text-align:center;margin-bottom:1.5rem;animation:slideUp .4s ease}
+.header-emoji{font-size:44px;display:block;margin-bottom:8px}
+.header-title{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.header-sub{font-size:13px;color:#a09e96}
+.wrap{max-width:560px;margin:0 auto}
+.confetti-piece{position:fixed;width:10px;height:10px;top:-20px;pointer-events:none;z-index:9999;border-radius:2px}
+@keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+</style></head><body>
+<div class="wrap">
+  <div class="header">
+    <span class="header-emoji">🍻</span>
+    <div class="header-title">席順結果</div>
+    <div class="header-sub">${new Date().toLocaleDateString('ja-JP')} 生成</div>
+  </div>
+  ${tablesHtml}
+</div>
+<script>
+(function(){
+  const colors=['#534AB7','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#3b82f6','#f97316'];
+  for(let i=0;i<80;i++){
+    const el=document.createElement('div'); el.className='confetti-piece';
+    const size=5+Math.random()*9;
+    el.style.cssText='position:fixed;top:-20px;pointer-events:none;z-index:9999;border-radius:2px';
+    el.style.left=Math.random()*100+'vw';
+    el.style.width=size+'px'; el.style.height=size+'px';
+    el.style.background=colors[Math.floor(Math.random()*colors.length)];
+    if(Math.random()>.5) el.style.borderRadius='50%';
+    const dur=1.8+Math.random()*2, delay=Math.random()*1;
+    el.style.animation='confettiFall '+dur+'s '+delay+'s ease-in forwards';
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),(dur+delay+.2)*1000);
+  }
+})();
+<\/script>
+</body></html>`;
+
+    document.open(); document.write(pageHtml); document.close();
+  }catch(e){ console.warn('QR parse error',e); }
+})();
+</script>
+</body>
+</html>
